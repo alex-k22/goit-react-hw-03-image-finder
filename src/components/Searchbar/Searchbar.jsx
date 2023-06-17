@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import PropTypes from 'prop-types';
 import css from './Searchbar.module.css';
 import './Searchbar.css';
 import { BsSearch } from 'react-icons/bs';
@@ -17,8 +18,6 @@ export class Searchbar extends Component {
     e.preventDefault();
     const { query } = this.state;
     this.props.onSubmit({ query });
-    this.setState({ query: '' })
-    this.props.toggleModal();
   };
 
   render() {
@@ -34,8 +33,8 @@ export class Searchbar extends Component {
             <input
               className={'SearchForm-input'}
               type="text"
-              autocomplete="off"
-              autofocus
+              autoComplete="off"
+              autoFocus
               placeholder="Search images and photos"
               onChange={this.handleQueryChange}
               value={this.state.query}
@@ -48,3 +47,7 @@ export class Searchbar extends Component {
 }
 
 export default Searchbar;
+
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};

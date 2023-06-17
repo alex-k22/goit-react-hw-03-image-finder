@@ -1,33 +1,70 @@
 import { Component } from 'react';
+import { Notify } from 'notiflix';
 import Searchbar from './Searchbar/Searchbar';
-import Modal from './Modal/Modal';
+import Button from './Button/Button';
+import ImageGallery from './ImageGallery/ImageGallery';
+import Loader from './Loader/Loader';
+import { fetchPhotos } from 'services/images-api';
 
 export class App extends Component {
   state = {
+    images: [],
     query: '',
-    showModal: true,
+    page: 1,
+    status: 'idle',
   };
 
   onFormSubmit = ({ query }) => {
-    this.setState({ query });
+    if (this.state.query === query) {
+      return;
+    }
+    this.setState({ query, page: 1, images: [] });
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal}))
+  onShowMoreButtonClick = () => {
+    if (this.state.images.length >= 500) {
+      Notify.failure('The end of collection');
+      return;
+    }
+
+    this.setState(({ page }) => ({
+      page: page + 1,
+    }));
+  };
+
+  async componentDidUpdate(prevProps, prevState) {
+    const { page, query, images } = this.state;
+
+    if (prevState.query !== query || prevState.page !== page) {
+      try {
+        this.setState({ status: 'pending' });
+        const { data } = await fetchPhotos(this.state.query, this.state.page);
+
+        if (data.hits.length === 0) {
+          Notify.failure('Sorry, but nothing found');
+          this.setState({ status: 'rejected' });
+        }
+        if (data.hits.length > 0) {
+          this.setState({ status: 'resolved' });
+        }
+
+        this.setState({ images: [...images, ...data.hits] });
+      } catch (error) {
+        console.log(error);
+        Notify.failure(error.message);
+        this.setState({ status: 'rejected' });
+      }
+    }
   }
- 
-src="https://cdn.pixabay.com/photo/2020/03/10/16/47/moon-4919501_1280.jpg";
-alt="basketball";
 
   render() {
+    const { images, status } = this.state;
     return (
       <>
-        <Searchbar onSubmit={this.onFormSubmit} toggleModal={this.toggleModal}/>
-        <Modal showModal={this.state.showModal}
-        toggleModal={this.toggleModal}
-        src={this.src}
-        alt={this.alt}/>
+        <Searchbar onSubmit={this.onFormSubmit} />
+        {images && <ImageGallery images={images} />}
+        {status === 'pending' && <Loader />}
+        {status === 'resolved' && <Button onClick={this.onShowMoreButtonClick} />}
       </>
     );
   }
